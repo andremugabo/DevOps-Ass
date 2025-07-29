@@ -5,6 +5,8 @@ name: Build and Push to GHCR with SHA
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'frontend/**'
       - 'backend/**'
