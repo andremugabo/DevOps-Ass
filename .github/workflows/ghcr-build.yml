@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Build and Deploy with GHCR
 
 on:
   push:
@@ -24,17 +24,25 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.PAT_TOKEN }}
 
+    - name: Set lowercase owner
+      id: vars
+      run: echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+
     - name: Build backend image
-      run: docker build -t ghcr.io/${{ github.repository_owner }}/backend:latest ./backend
+      run: |
+        docker build -t ghcr.io/${{ steps.vars.outputs.owner_lc }}/backend:latest ./backend
 
     - name: Build frontend image
-      run: docker build -t ghcr.io/${{ github.repository_owner }}/frontend:latest ./frontend
+      run: |
+        docker build -t ghcr.io/${{ steps.vars.outputs.owner_lc }}/frontend:latest ./frontend
 
     - name: Push backend image
-      run: docker push ghcr.io/${{ github.repository_owner }}/backend:latest
+      run: |
+        docker push ghcr.io/${{ steps.vars.outputs.owner_lc }}/backend:latest
 
     - name: Push frontend image
-      run: docker push ghcr.io/${{ github.repository_owner }}/frontend:latest
+      run: |
+        docker push ghcr.io/${{ steps.vars.outputs.owner_lc }}/frontend:latest
 
     - name: Deploy to server via SSH
       uses: appleboy/ssh-action@v0.1.7
@@ -43,7 +51,7 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          docker login ghcr.io -u <your-username> -p <GHCR-PAT>
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.PAT_TOKEN }}
           cd /path/to/your/project
           docker-compose pull
           docker-compose up -d
